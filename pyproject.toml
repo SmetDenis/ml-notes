@@ -8,13 +8,15 @@ authors = [{ name = "SmetDenis" }]
 
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "numpy (>=2.2.3,<3.0.0)",
     "jupyterlab (>=4.3.5,<5.0.0)",
     "torch (>=2.6.0,<3.0.0)",
     "matplotlib (>=3.10.1,<4.0.0)",
     "spacy (>=3.8.4,<4.0.0)",
     "notebook (>=7.3.2,<8.0.0)",
-    "nltk (>=3.9.1,<4.0.0)"
+    "nltk (>=3.9.1,<4.0.0)",
+    "tensorflow (>=2.18.0,<3.0.0)",
+    "numpy (>=2.0.2,<3.0.0)",
+    "seaborn (>=0.13.2,<0.14.0)"
 ]
 
 
