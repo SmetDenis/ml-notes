@@ -1,5 +1,7 @@
 *.zip
 *.csv
+*_weights.npz
+tasks_1-20_v1-2
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
