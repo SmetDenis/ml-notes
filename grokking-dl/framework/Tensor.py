@@ -92,10 +92,12 @@ class Tensor(object):
     def cross_entropy(self, target_indices):
         temp = np.exp(self.data)
         softmax_output = temp / np.sum(temp, axis=len(self.data.shape)-1, keepdims=True)
+
         t =  target_indices.data.flatten()
         p = softmax_output.reshape(len(t), -1)
-        target_dist = np.eye(p.shape[1])[t]
-        loss = - (np.log(p) * (target_dist)).sum(1).mean()
+
+        target_dist = np.eye(p.shape[1])[t] # One-hot encoding для целевых индексов
+        loss = - (np.log(p) * (target_dist)).sum(1).mean()  # Избегаем log(0)
 
         if (self.autograd):
             out = Tensor(loss,
