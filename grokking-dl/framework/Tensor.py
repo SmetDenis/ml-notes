@@ -8,7 +8,7 @@ class Tensor(object):
         self.children = {}
         self.creation_op = creation_op
         self.grad = None
-        if (id is None): id = np.random.randint(1000)
+        if (id is None): id = np.random.randint(100000)
         self.id = id
 
         if (parents is not None):
@@ -78,6 +78,34 @@ class Tensor(object):
                           parents=[self],
                           creation_op="neg")
         return Tensor(self.data * -1)
+
+    def index_select(self, indices):
+        if (self.autograd):
+            new = Tensor(self.data[indices.data],
+                         autograd=True,
+                         parents=[self],
+                         creation_op="index_select")
+            new.index_select_indices = indices
+            return new
+        return Tensor(self.data[indices.data])
+
+    def cross_entropy(self, target_indices):
+        temp = np.exp(self.data)
+        softmax_output = temp / np.sum(temp, axis=len(self.data.shape)-1, keepdims=True)
+        t =  target_indices.data.flatten()
+        p = softmax_output.reshape(len(t), -1)
+        target_dist = np.eye(p.shape[1])[t]
+        loss = - (np.log(p) * (target_dist)).sum(1).mean()
+
+        if (self.autograd):
+            out = Tensor(loss,
+                         autograd=True,
+                         parents=[self],
+                         creation_op="cross_entropy")
+            out.softmax_output = softmax_output
+            out.target_dist = target_dist
+            return out
+        return Tensor(loss)
 
     def __repr__(self):
         return str('Tensor(' + self.id.__repr__() + ') Data: ' + self.data.__str__())
@@ -176,7 +204,26 @@ class Tensor(object):
 
                 if (self.creation_op == 'tanh'):
                     ones = Tensor(np.ones_like(self.grad.data))
-                    self.parents[0].backward(self.grad * (self - (ones * self)))
+                    self.parents[0].backward(self.grad * (ones - (self * self)))
+
+                if self.creation_op == 'index_select':
+                    # Инициализация нового градиента с нулями, такой же формы, как у родительского тензора
+                    new_grad = np.zeros_like(self.parents[0].data)
+
+                    # Получение выбранных индексов и изменение формы градиента
+                    selected_indices = self.index_select_indices.data.flatten()
+                    reshaped_grad = grad.data.reshape(len(selected_indices), -1)
+
+                    # Распределение градиентов по выбранным индексам
+                    for i in range(len(selected_indices)):
+                        new_grad[selected_indices[i]] += reshaped_grad[i]
+
+                    # Обратное распространение градиента к родительскому тензору
+                    self.parents[0].backward(Tensor(new_grad))
+
+                if (self.creation_op == 'cross_entropy'):
+                    dx = self.softmax_output - self.target_dist
+                    self.parents[0].backward(Tensor(dx))
 
     def forward(self, grad=None, grad_origin=None):
         if (self.autograd):
